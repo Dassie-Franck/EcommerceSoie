@@ -145,10 +145,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/categories/create',       [CategoryController::class, 'create'])->name('categories.create');
     Route::post('/categories',             [CategoryController::class, 'store'])->name('categories.store');
     Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
-    Route::patch('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-    Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
-    Route::match(['PUT', 'PATCH'], '/categories/{category}', [CategoryController::class, 'update'])
-        ->name('categories.update');
+    // Après
+Route::match(['PUT', 'PATCH'], '/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
     // Commandes admin
     Route::get('/orders',                    [AdminOrderController::class, 'index'])->name('orders.index');
