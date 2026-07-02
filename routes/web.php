@@ -15,6 +15,7 @@ use App\Http\Controllers\Shop\CheckoutController;
 use App\Http\Controllers\Shop\HomeController;
 use App\Http\Controllers\Shop\OrderController;
 use App\Http\Controllers\Shop\ProductController;
+use App\Http\Controllers\Shop\ProductFilterController;
 use App\Http\Controllers\Shop\ReviewController;
 use App\Http\Controllers\Shop\WishlistController;
 use App\Http\Controllers\TrackingController;
@@ -23,58 +24,42 @@ use Illuminate\Support\Facades\Route;
 // ── AUTH (invités seulement) ──────────────────────────────
 Route::middleware('guest')->group(function () {
 
-    // Login
     Route::get('/login',  [LoginController::class, 'showForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:6,1');
 
-    // Register
     Route::get('/register',  [RegisterController::class, 'showForm'])->name('register');
     Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:6,1');
 
-    // ── PASSWORD RESET OTP ────────────────────────────────
-    Route::get('/forgot-password',  [PasswordResetController::class, 'showForgotForm'])
-        ->name('password.request');
-    Route::post('/forgot-password', [PasswordResetController::class, 'sendOtp'])
-        ->name('password.email')
-        ->middleware('throttle:3,5');
+    Route::get('/forgot-password',  [PasswordResetController::class, 'showForgotForm'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendOtp'])->name('password.email')->middleware('throttle:3,5');
 
-    Route::get('/verify-otp',  [PasswordResetController::class, 'showOtpForm'])
-        ->name('password.otp.form');
-    Route::post('/verify-otp', [PasswordResetController::class, 'verifyOtp'])
-        ->name('password.otp.verify')
-        ->middleware('throttle:5,1');
+    Route::get('/verify-otp',  [PasswordResetController::class, 'showOtpForm'])->name('password.otp.form');
+    Route::post('/verify-otp', [PasswordResetController::class, 'verifyOtp'])->name('password.otp.verify')->middleware('throttle:5,1');
 
-    Route::get('/reset-password',  [PasswordResetController::class, 'showResetForm'])
-        ->name('password.reset.form');
-    Route::post('/reset-password', [PasswordResetController::class, 'reset'])
-        ->name('password.update')
-        ->middleware('throttle:10,1');
+    Route::get('/reset-password',  [PasswordResetController::class, 'showResetForm'])->name('password.reset.form');
+    Route::post('/reset-password', [PasswordResetController::class, 'reset'])->name('password.update')->middleware('throttle:10,1');
 
-    // Google OAuth
     Route::get('/auth/google',          [SocialAuthController::class, 'redirectToGoogle'])->name('auth.google');
     Route::get('/auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 });
 
 // ── LOGOUT ────────────────────────────────────────────────
-Route::post('/logout', [LoginController::class, 'logout'])
-    ->name('logout')
-    ->middleware('auth');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
 // ── SHOP PUBLIC ───────────────────────────────────────────
-Route::get('/', [HomeController::class, 'index'])->name('shop.home');
+Route::get('/',          [HomeController::class, 'index'])->name('shop.home');
 Route::get('/catalogue', [ProductController::class, 'index'])->name('shop.catalogue');
+Route::get('/boutique',  [ProductController::class, 'index'])->name('shop');
 Route::get('/produit/{slug}', [ProductController::class, 'show'])->name('shop.product');
-Route::get('/boutique', [ProductController::class, 'index'])->name('shop');
-// filtres de produits
-Route::get('/api/products/latest', [App\Http\Controllers\Shop\ProductFilterController::class, 'latest'])->name('shop.products.latest');
+Route::get('/api/products/latest', [ProductFilterController::class, 'latest'])->name('shop.products.latest');
 
-// ── SUIVI DE COLIS (PUBLIC) ───────────────────────────────
-Route::get('/tracking', [TrackingController::class, 'form'])->name('tracking.form');
-Route::post('/tracking/lookup', [TrackingController::class, 'lookup'])->name('tracking.lookup');
-Route::get('/tracking/result/{reference}/{email}', [TrackingController::class, 'result'])->name('tracking.result');
-Route::get('/api/tracking/{trackingNumber}', [TrackingController::class, 'apiTrack'])->name('api.tracking');
+// ── SUIVI DE COLIS PUBLIC ─────────────────────────────────
+Route::get('/tracking',                              [TrackingController::class, 'form'])->name('tracking.form');
+Route::post('/tracking/lookup',                      [TrackingController::class, 'lookup'])->name('tracking.lookup');
+Route::get('/tracking/result/{reference}/{email}',   [TrackingController::class, 'result'])->name('tracking.result');
+Route::get('/api/tracking/{trackingNumber}',         [TrackingController::class, 'apiTrack'])->name('api.tracking');
 
-// ── PANIER (connecté ou anonyme) ─────────────────────────
+// ── PANIER ────────────────────────────────────────────────
 Route::get('/panier',             [CartController::class, 'index'])->name('shop.cart');
 Route::post('/panier/ajouter',    [CartController::class, 'add'])->name('shop.cart.add');
 Route::patch('/panier/{itemId}',  [CartController::class, 'update'])->name('shop.cart.update');
@@ -82,14 +67,10 @@ Route::delete('/panier/{itemId}', [CartController::class, 'remove'])->name('shop
 Route::delete('/panier',          [CartController::class, 'clear'])->name('shop.cart.clear');
 
 // ── FAVORIS (auth requis) ─────────────────────────────────
-Route::post('/favoris/toggle', [WishlistController::class, 'toggle'])
-    ->name('shop.wishlist.toggle')
-    ->middleware('auth');
+Route::post('/favoris/toggle', [WishlistController::class, 'toggle'])->name('shop.wishlist.toggle')->middleware('auth');
 
 // ── AVIS PRODUIT (auth requis) ────────────────────────────
-Route::post('/produit/{product}/avis', [ReviewController::class, 'store'])
-    ->name('shop.review.store')
-    ->middleware('auth');
+Route::post('/produit/{product}/avis', [ReviewController::class, 'store'])->name('shop.review.store')->middleware('auth');
 
 // ── CHECKOUT (auth requis) ────────────────────────────────
 Route::middleware('auth')->group(function () {
@@ -103,26 +84,21 @@ Route::middleware('auth')->group(function () {
 // ── COMPTE CLIENT (auth requis) ───────────────────────────
 Route::middleware('auth')->prefix('compte')->name('account.')->group(function () {
 
-    // Profil
     Route::get('/profil',            [ProfileController::class, 'show'])->name('profile');
     Route::patch('/profil',          [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profil/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 
-    // Commandes
-    Route::get('/commandes',                      [OrderController::class, 'index'])->name('orders');
-    Route::get('/commandes/{order}',              [OrderController::class, 'show'])->name('orders.show');
-    Route::patch('/commandes/{order}/cancel',     [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::get('/commandes',                  [OrderController::class, 'index'])->name('orders');
+    Route::get('/commandes/{order}',          [OrderController::class, 'show'])->name('orders.show');
+    Route::patch('/commandes/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
 
-    // Favoris
     Route::get('/favoris', [WishlistController::class, 'index'])->name('wishlist');
 
-    // Adresses
     Route::get('/adresses',              [AddressController::class, 'index'])->name('addresses');
     Route::post('/adresses',             [AddressController::class, 'store'])->name('addresses.store');
     Route::delete('/adresses/{address}', [AddressController::class, 'destroy'])->name('addresses.destroy');
 
-    // SUIVI DE COLIS (espace client)
-    Route::get('/suivi', [TrackingController::class, 'index'])->name('tracking');
+    Route::get('/suivi',        [TrackingController::class, 'index'])->name('tracking');
     Route::get('/suivi/{order}', [TrackingController::class, 'trackOrder'])->name('tracking.order');
 });
 
@@ -141,15 +117,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/products/{product}',        [AdminProductController::class, 'destroy'])->name('products.destroy');
 
     // Catégories
-    Route::get('/categories',              [CategoryController::class, 'index'])->name('categories.index');
-    Route::get('/categories/create',       [CategoryController::class, 'create'])->name('categories.create');
-    Route::post('/categories',             [CategoryController::class, 'store'])->name('categories.store');
+    Route::get('/categories',                 [CategoryController::class, 'index'])->name('categories.index');
+    Route::get('/categories/create',          [CategoryController::class, 'create'])->name('categories.create');
+    Route::post('/categories',                [CategoryController::class, 'store'])->name('categories.store');
     Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
-    // Après
-Route::match(['PUT', 'PATCH'], '/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+    Route::match(['PUT', 'PATCH'], '/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{category}',   [CategoryController::class, 'destroy'])->name('categories.destroy');
 
-    // Commandes admin
+    // Commandes
     Route::get('/orders',                    [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}',            [AdminOrderController::class, 'show'])->name('orders.show');
     Route::patch('/orders/{order}/status',   [AdminOrderController::class, 'updateStatus'])->name('orders.status');
